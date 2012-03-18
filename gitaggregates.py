@@ -11,15 +11,20 @@ class TimeHisto(object):
         self.h = defaultdict(lambda: 0)
 
     def add_logs(self, directory=None, log_args=['HEAD']):
-        args=['git']
+        args=['hg']
         if directory:
             args.append('--git-dir=' + directory)
-        args.extend(['log', '--pretty=format:%at'])
+        args.extend(['log', '--template={date}\n'])
         args.extend(log_args)
         sub = subprocess.Popen(args, stdout=subprocess.PIPE, close_fds=True)
 
         for l in sub.stdout:
-            self.h[time.strftime("%w %H", time.localtime(float(l.strip())))] += 1
+            t, offset = l.strip().split('.')
+            t = float(t)
+            offset = offset[1:]
+            t -= int(offset)
+            
+            self.h[time.strftime("%w %H", time.gmtime(t))] += 1
 
     def dump(self):
         for h in range(24):
@@ -173,4 +178,4 @@ class ChangeOverTime(object):
         return self.mk_chart().get_url()
 
 def open_chart(chartish):
-    subprocess.check_call(['open', chartish.to_gchart()])
+    subprocess.check_call(['firefox', chartish.to_gchart()])
